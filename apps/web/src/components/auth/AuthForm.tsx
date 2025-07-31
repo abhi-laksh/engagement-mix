@@ -57,6 +57,14 @@ export default function AuthForm() {
     console.log("Resend OTP for email:", submittedEmail);
   };
 
+  const handleInputEmail = (e: React.ChangeEvent<HTMLInputElement>) => {
+    emailForm.setValue("email", e.target.value);
+  };
+
+  const handleInputOTP = (value: string) => {
+    otpForm.setValue("otp", value);
+  };
+
   return (
     <div className="min-h-screen flex">
       {/* Left Section - Form */}
@@ -89,8 +97,8 @@ export default function AuthForm() {
             <form onSubmit={emailForm.handleSubmit(onEmailSubmit)}>
               <Stack gap="lg">
                 <Box>
-                  <Text size="sm" fw={500} mb="xs" c="dark.7" ta="center">
-                    Email Address
+                  <Text size="lg" fw={500} mb="xs" c="dark.7" ta="center">
+                    Enter Email
                   </Text>
                   <TextInput
                     {...emailForm.register("email")}
@@ -127,7 +135,7 @@ export default function AuthForm() {
                 <form onSubmit={otpForm.handleSubmit(onOTPSubmit)}>
                   <Stack gap="lg">
                     <Box>
-                      <Text size="sm" fw={500} mb="md" c="dark.7" ta="center">
+                      <Text size="lg" fw={500} mb="md" c="dark.7" ta="center">
                         Enter OTP
                       </Text>
                       <div className="flex justify-center">
@@ -137,7 +145,7 @@ export default function AuthForm() {
                           size="lg"
                           type="number"
                           placeholder=""
-                          onChange={(value) => otpForm.setValue("otp", value)}
+                          onChange={handleInputOTP}
                           gap="sm"
                         />
                       </div>
