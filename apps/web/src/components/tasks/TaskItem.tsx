@@ -1,15 +1,15 @@
-import { useTaskStore } from "@/store/taskStore";
+import { useDeleteTask, useToggleTaskComplete } from "@/api-services/tasks";
 import { Task, TaskStatus } from "@/types/task";
 import { ActionIcon, Box, Card, Checkbox, Group, Menu, Text } from "@mantine/core";
 import {
-    IconAdjustments,
-    IconCircleCheck,
-    IconCircleDashedX,
-    IconEdit,
-    IconMenuOrder,
-    IconProgress,
-    IconTimeDuration0,
-    IconTrash
+  IconAdjustments,
+  IconCircleCheck,
+  IconCircleDashedX,
+  IconEdit,
+  IconMenuOrder,
+  IconProgress,
+  IconTimeDuration0,
+  IconTrash
 } from "@tabler/icons-react";
 
 
@@ -43,13 +43,14 @@ const statusConfig = {
 };
 
 export default function TaskItem({ task, onEdit, dragHandleProps }: TaskItemProps) {
-  const { toggleTaskComplete, deleteTask } = useTaskStore();
+  const toggleTaskMutation = useToggleTaskComplete();
+  const deleteTaskMutation = useDeleteTask();
   const statusInfo = statusConfig[task.status];
   const StatusIcon = statusInfo.icon;
   const isCompleted = task.status === TaskStatus.COMPLETED;
 
   const handleToggleComplete = () => {
-    toggleTaskComplete(task.id);
+    toggleTaskMutation.mutate(task.id);
   };
 
   const handleEdit = () => {
@@ -57,7 +58,7 @@ export default function TaskItem({ task, onEdit, dragHandleProps }: TaskItemProp
   };
 
   const handleDelete = () => {
-    deleteTask(task.id);
+    deleteTaskMutation.mutate(task.id);
   };
 
   return (

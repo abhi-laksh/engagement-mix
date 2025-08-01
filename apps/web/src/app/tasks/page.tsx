@@ -1,7 +1,9 @@
 "use client";
 
+import { useCreateTask, useGetTasks, useUpdateTask } from "@/api-services/tasks";
 import SortableTaskList from "@/components/tasks/SortableTaskList";
-import { AddTaskModal, EditTaskModal } from "@/components/tasks/TaskFormModal";
+import TaskFormModal from "@/components/tasks/TaskFormModal/TaskFormModal";
+import { CreateTaskFormData } from "@/lib/validations/task";
 import { useTaskStore } from "@/store/taskStore";
 import { Task, TaskStatus } from "@/types/task";
 import { Button, Container, Group, Title } from "@mantine/core";
@@ -49,26 +51,68 @@ const mockTasks: Task[] = [
 ];
 
 export default function TasksPage() {
-  const { tasks, setTasks } = useTaskStore();
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  
+  // Use query hooks
+  const { data: tasksData, isLoading } = useGetTasks();
+  const createTaskMutation = useCreateTask();
+  const updateTaskMutation = useUpdateTask();
+  
+  // Access zustand store for getting tasks from normalized state
+  const allTasks = useTaskStore(state => state.allTasks);
+  const tasksById = useTaskStore(state => state.tasksById);
+  const setTasks = useTaskStore(state => state.setTasks);
+  
+  // Get tasks array from normalized state
+  const tasks = allTasks.map(id => tasksById[id]).filter(Boolean);
 
-  // Initialize with mock data on first load
+  // Initialize with server data when available, fallback to mock data
   useEffect(() => {
-    if (tasks.length === 0) {
+    if ((tasksData as any)?.data?.tasks) {
+      setTasks((tasksData as any).data.tasks);
+    } else if (tasks.length === 0 && !isLoading) {
+      // Fallback to mock data if no server data and not loading
       setTasks(mockTasks);
     }
-  }, [tasks.length, setTasks]);
+  }, [tasksData, setTasks, tasks.length, isLoading]);
+
+  const handleAddTask = () => {
+    setEditingTask(null);
+    setIsModalOpen(true);
+  };
 
   const handleEditTask = (task: Task) => {
     setEditingTask(task);
-    setIsEditModalOpen(true);
+    setIsModalOpen(true);
   };
 
-  const handleCloseEditModal = () => {
-    setIsEditModalOpen(false);
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
     setEditingTask(null);
+  };
+
+  const handleFormSubmit = (data: CreateTaskFormData, task?: Task | null) => {
+    if (task) {
+      // Edit mode
+      updateTaskMutation.mutate({
+        id: task.id,
+        data: {
+          title: data.title,
+          description: data.description,
+          dueDate: data.dueDate,
+          status: data.status as TaskStatus,
+        }
+      });
+    } else {
+      // Add mode
+      createTaskMutation.mutate({
+        title: data.title,
+        description: data.description,
+        dueDate: data.dueDate,
+        status: data.status as TaskStatus,
+      });
+    }
   };
 
   return (
@@ -79,7 +123,7 @@ export default function TasksPage() {
         </Title>
         <Button
           leftSection={<IconPlus size={16} />}
-          onClick={() => setIsAddModalOpen(true)}
+          onClick={handleAddTask}
           size="md"
         >
           Add Task
@@ -88,15 +132,11 @@ export default function TasksPage() {
 
       <SortableTaskList tasks={tasks} onEditTask={handleEditTask} />
 
-      <AddTaskModal
-        opened={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-      />
-
-      <EditTaskModal
-        opened={isEditModalOpen}
-        onClose={handleCloseEditModal}
+      <TaskFormModal
+        opened={isModalOpen}
+        onClose={handleCloseModal}
         task={editingTask}
+        onSubmit={handleFormSubmit}
       />
     </Container>
   );

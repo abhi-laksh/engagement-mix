@@ -1,5 +1,1 @@
-export { default as AddTaskModal } from './AddTaskModal';
-export { default as DateInput } from './DateInput';
-export { default as EditTaskModal } from './EditTaskModal';
-export { default as StatusInput } from './StatusInput';
-
+export { default, default as TaskFormModal } from "./TaskFormModal";

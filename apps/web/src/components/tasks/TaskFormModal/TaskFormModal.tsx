@@ -1,30 +1,33 @@
 "use client";
 
 import { CreateTaskFormData, createTaskSchema } from "@/lib/validations/task";
-import { useTaskStore } from "@/store/taskStore";
-import { TaskStatus } from "@/types/task";
+import { Task, TaskStatus } from "@/types/task";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-    Box,
-    Button,
-    Group,
-    Modal,
-    Stack,
-    Text,
-    TextInput,
-    Textarea
+  Box,
+  Button,
+  Group,
+  Modal,
+  Stack,
+  Text,
+  TextInput,
+  Textarea
 } from "@mantine/core";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import DateInput from "./DateInput";
 import StatusInput from "./StatusInput";
 
-interface AddTaskModalProps {
+interface TaskFormModalProps {
   opened: boolean;
   onClose: () => void;
+  task?: Task | null;
+  onSubmit: (data: CreateTaskFormData, task?: Task | null) => void;
 }
 
-export default function AddTaskModal({ opened, onClose }: AddTaskModalProps) {
-  const { addTask } = useTaskStore();
+export default function TaskFormModal({ opened, onClose, task, onSubmit }: TaskFormModalProps) {
+  const isEdit = !!task;
+  
   const form = useForm<CreateTaskFormData>({
     resolver: zodResolver(createTaskSchema),
     mode: "onSubmit",
@@ -36,11 +39,28 @@ export default function AddTaskModal({ opened, onClose }: AddTaskModalProps) {
     },
   });
 
+  // Update form when task changes (for edit mode)
+  useEffect(() => {
+    if (task && opened) {
+      form.reset({
+        title: task.title,
+        description: task.description,
+        dueDate: task.dueDate.toISOString().split('T')[0],
+        status: task.status,
+      });
+    } else if (!task && opened) {
+      // Reset to defaults for add mode
+      form.reset({
+        title: "",
+        description: "",
+        dueDate: new Date().toISOString().split('T')[0],
+        status: TaskStatus.NOT_STARTED,
+      });
+    }
+  }, [task, opened, form]);
+
   const handleSubmit = (data: CreateTaskFormData) => {
-    addTask({
-      ...data,
-      status: data.status as TaskStatus
-    });
+    onSubmit(data, task);
     handleClose();
   };
 
@@ -53,7 +73,7 @@ export default function AddTaskModal({ opened, onClose }: AddTaskModalProps) {
     <Modal
       opened={opened}
       onClose={handleClose}
-      title="Add New Task"
+      title={isEdit ? "Edit Task" : "Add New Task"}
       size="lg"
       centered
       styles={{
@@ -115,7 +135,7 @@ export default function AddTaskModal({ opened, onClose }: AddTaskModalProps) {
               loading={form.formState.isSubmitting}
               disabled={!form.formState.isValid && form.formState.isSubmitted}
             >
-              Create Task
+              {isEdit ? "Update Task" : "Create Task"}
             </Button>
           </Group>
         </div>
