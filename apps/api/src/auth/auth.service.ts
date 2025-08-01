@@ -30,7 +30,7 @@ export class AuthService {
 
     // Check if user exists
     const existingUser = await this.authRepository.findByEmail(email);
-
+    console.log('existingUser', existingUser);
     // Generate OTP
     const otp = this.generateOTP();
 
@@ -38,7 +38,7 @@ export class AuthService {
 
     const otpPayload: OtpPayload = {
       otp,
-      userId: existingUser?.id as string,
+      userId: existingUser?._id?.toString(),
       email,
     };
 
@@ -78,12 +78,10 @@ export class AuthService {
     }
 
     let userId: string;
-    let newUser = false;
 
     if (!storedData.userId) {
       const user = await this.authRepository.createUser(email);
-      userId = user.id;
-      newUser = true;
+      userId = user._id?.toString() as string;
     } else {
       userId = storedData.userId;
     }

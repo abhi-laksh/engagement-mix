@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 import { TaskStatus } from '../../shared/constants';
 
 export type TaskDocument = Task & Document;
@@ -30,6 +30,9 @@ export class Task {
 
   createdAt: Date;
   updatedAt: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  createdBy: Types.ObjectId;
 }
 
 export const TaskSchema = SchemaFactory.createForClass(Task);

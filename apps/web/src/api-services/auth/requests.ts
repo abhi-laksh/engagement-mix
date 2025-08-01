@@ -20,7 +20,12 @@ export const verifyOtp = async (data: VerifyOtpDto) =>
     },
   });
 
-export const refresh = async () =>
-  await get<{ accessToken: string }>(AUTH_ENDPOINTS.REFRESH);
+export const refresh = async (refreshToken: string) =>
+  await get<{ accessToken: string }>(AUTH_ENDPOINTS.REFRESH, {
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${refreshToken}`,
+    },
+  });
 
 export const getMe = async () => await get<User>(AUTH_ENDPOINTS.ME);

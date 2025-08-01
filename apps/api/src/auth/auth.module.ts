@@ -7,9 +7,9 @@ import { EmailModule } from '../email/email.module';
 import { AuthController } from './auth.controller';
 import { AuthRepository } from './auth.repository';
 import { AuthService } from './auth.service';
-import { User, UserSchema } from './schemas/user.schema';
-import { RefreshTokenStrategy } from './strategy/refresh-token.strategy';
+import { User, UserSchema } from './schemas/db.schema';
 import { JwtStrategy } from './strategy/jwt.strategy';
+import { RefreshTokenStrategy } from './strategy/refresh-token.strategy';
 
 @Module({
   imports: [

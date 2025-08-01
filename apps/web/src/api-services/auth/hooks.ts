@@ -1,20 +1,10 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../../store/authStore";
-import {
-  getMe,
-  initiateAuth,
-  refresh,
-  verifyOtp
-} from "./requests";
+import { getMe, initiateAuth, refresh, verifyOtp } from "./requests";
 import { AuthResponse, InitiateAuthDto, User, VerifyOtpDto } from "./types";
 
-
 export function useInitiateAuth() {
-  return useMutation<
-    { message: string },
-    unknown,
-    InitiateAuthDto
-  >({
+  return useMutation<{ message: string }, unknown, InitiateAuthDto>({
     mutationFn: async (data) => {
       const response = await initiateAuth(data);
       return response.data;
@@ -25,7 +15,7 @@ export function useInitiateAuth() {
 export function useVerifyOtp() {
   const setTokens = useAuthStore((state) => state.setTokens);
   const clearAuth = useAuthStore((state) => state.clearAuth);
-  
+
   return useMutation<AuthResponse, unknown, VerifyOtpDto>({
     mutationFn: async (data) => {
       const response = await verifyOtp(data);
@@ -43,10 +33,11 @@ export function useVerifyOtp() {
 export function useRefresh() {
   const updateAccessToken = useAuthStore((state) => state.updateAccessToken);
   const clearAuth = useAuthStore((state) => state.clearAuth);
-  
+  const refreshToken = useAuthStore((state) => state.refreshToken);
+
   return useMutation<{ accessToken: string }, unknown, void>({
     mutationFn: async () => {
-      const response = await refresh();
+      const response = await refresh(refreshToken as string);
       return response.data;
     },
     onSuccess: (data) => {
@@ -59,23 +50,12 @@ export function useRefresh() {
 }
 
 export function useMe(options?: any) {
+  const setUser = useAuthStore((state) => state.setUser);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+
   return useQuery({
     queryKey: ["auth", "me"],
     queryFn: async () => {
-      const response = await getMe();
-      return response.data;
-    },
-    ...options,
-  });
-}
-
-// Hook that automatically updates the store when user data is fetched
-export function useMeWithStore(options?: any) {
-  const setUser = useAuthStore((state) => state.setUser);
-  const clearAuth = useAuthStore((state) => state.clearAuth);
-  
-  return useMutation<User, unknown, void>({
-    mutationFn: async () => {
       const response = await getMe();
       return response.data;
     },
@@ -85,5 +65,7 @@ export function useMeWithStore(options?: any) {
     onError: () => {
       clearAuth();
     },
+    enabled: false,
+    ...options,
   });
 }

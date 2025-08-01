@@ -1,8 +1,13 @@
 
 @import "tailwindcss";
 
-@import "tailwindcss/preflight";
-@import "tailwindcss/utilities";
+@tailwind components;
+@tailwind utilities;
+
+@layer tailwind {
+  @tailwind base;
+}
+
 
 @import "@mantine/core/styles.css";
 @import "@mantine/dates/styles.css";

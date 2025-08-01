@@ -9,7 +9,9 @@ import { AppConfigService } from './app-config.service';
 const configSchema = Joi.object({
   PORT: Joi.number().default(5000),
   DATABASE_URL: Joi.string().required(),
-  CORS_ALLOWED_ORIGINS: Joi.string().required(),
+  CORS_ALLOWED_ORIGINS: Joi.string().required().custom((value) => {
+    return value.split(',');
+  }),
   REDIS_URL: Joi.string().required(),
   REDIS_PASSWORD: Joi.string().required(),
 

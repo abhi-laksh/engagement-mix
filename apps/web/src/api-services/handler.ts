@@ -1,3 +1,5 @@
+import { useAuthStore } from "@/store";
+
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export interface HttpOptions {
@@ -59,6 +61,7 @@ export async function http<T>(
     method,
     headers: {
       "Content-Type": "application/json",
+      'Authorization': `Bearer ${useAuthStore.getState().accessToken}`,
       ...headers,
     },
     body: body ? JSON.stringify(body) : undefined,

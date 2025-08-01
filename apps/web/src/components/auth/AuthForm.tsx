@@ -1,5 +1,6 @@
 "use client";
 
+import { useInitiateAuth, useMe, useVerifyOtp } from "@/api-services/auth";
 import { EmailFormData, emailSchema, OTPFormData, otpSchema } from "@/lib/validations/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -16,12 +17,18 @@ import {
   IconMail,
   IconRefresh
 } from "@tabler/icons-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 export default function AuthForm() {
   const [step, setStep] = useState<"email" | "otp">("email");
   const [submittedEmail, setSubmittedEmail] = useState<string>("");
+  const router = useRouter();
+
+  const initiateAuthMutation = useInitiateAuth();
+  const verifyOtpMutation = useVerifyOtp();
+  const fetchUser = useMe();
 
   const emailForm = useForm<EmailFormData>({
     resolver: zodResolver(emailSchema),
@@ -37,14 +44,30 @@ export default function AuthForm() {
     },
   });
 
-  const onEmailSubmit = (data: EmailFormData) => {
-    setSubmittedEmail(data.email);
-    setStep("otp");
+  const onEmailSubmit = async (data: EmailFormData) => {
+    try {
+      await initiateAuthMutation.mutateAsync({ email: data.email });
+      setSubmittedEmail(data.email);
+      setStep("otp");
+    } catch (error) {
+      console.error("Failed to initiate auth:", error);
+      // Error handling - the mutation will show the error state
+    }
   };
 
-  const onOTPSubmit = (data: OTPFormData) => {
-    // TODO: Implement OTP verification
-    console.log("OTP submitted:", data.otp, "for email:", submittedEmail);
+  const onOTPSubmit = async (data: OTPFormData) => {
+    try {
+      await verifyOtpMutation.mutateAsync({ 
+        email: submittedEmail, 
+        otp: data.otp 
+      });
+
+      await fetchUser.refetch();
+      
+      router.push("/tasks");
+    } catch (error) {
+      console.error("Failed to verify OTP:", error);
+    }
   };
 
   const handleChangeEmail = () => {
@@ -52,13 +75,12 @@ export default function AuthForm() {
     emailForm.setValue("email", submittedEmail);
   };
 
-  const handleResendOTP = () => {
-    // TODO: Implement resend OTP API call
-    console.log("Resend OTP for email:", submittedEmail);
-  };
-
-  const handleInputEmail = (e: React.ChangeEvent<HTMLInputElement>) => {
-    emailForm.setValue("email", e.target.value);
+  const handleResendOTP = async () => {
+    try {
+      await initiateAuthMutation.mutateAsync({ email: submittedEmail });
+    } catch (error) {
+      console.error("Failed to resend OTP:", error);
+    }
   };
 
   const handleInputOTP = (value: string) => {
@@ -104,7 +126,8 @@ export default function AuthForm() {
                     {...emailForm.register("email")}
                     leftSection={<IconMail size={18} />}
                     placeholder="Enter your email address"
-                    error={emailForm.formState.errors.email?.message}
+                    error={emailForm.formState.errors.email?.message || 
+                           (initiateAuthMutation.isError ? "Failed to send OTP. Please try again." : undefined)}
                     size="lg"
                     radius="md"
                   />
@@ -115,7 +138,7 @@ export default function AuthForm() {
                   fullWidth 
                   size="lg"
                   radius="md"
-                  loading={emailForm.formState.isSubmitting}
+                  loading={initiateAuthMutation.isPending}
                   className="mt-6"
                 >
                   Continue
@@ -149,9 +172,10 @@ export default function AuthForm() {
                           gap="sm"
                         />
                       </div>
-                      {otpForm.formState.errors.otp && (
+                      {(otpForm.formState.errors.otp || verifyOtpMutation.isError) && (
                         <Text size="sm" c="red" mt="sm" ta="center">
-                          {otpForm.formState.errors.otp.message}
+                          {otpForm.formState.errors.otp?.message || 
+                           (verifyOtpMutation.isError ? "Invalid OTP. Please try again." : "")}
                         </Text>
                       )}
                     </Box>
@@ -161,7 +185,7 @@ export default function AuthForm() {
                       fullWidth 
                       size="lg"
                       radius="md"
-                      loading={otpForm.formState.isSubmitting}
+                      loading={verifyOtpMutation.isPending || fetchUser.isPending}
                       className="mt-6"
                     >
                       Verify OTP
@@ -191,6 +215,7 @@ export default function AuthForm() {
                     onClick={handleResendOTP}
                     size="md"
                     c="gray.6"
+                    loading={initiateAuthMutation.isPending}
                   >
                     Resend OTP
                   </Button>
