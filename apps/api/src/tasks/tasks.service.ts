@@ -74,11 +74,15 @@ export class TasksService {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
 
-    const newStatus = task.status === TaskStatus.COMPLETED 
-      ? TaskStatus.NOT_STARTED 
-      : TaskStatus.COMPLETED;
+    const newStatus =
+      task.status === TaskStatus.COMPLETED
+        ? TaskStatus.NOT_STARTED
+        : TaskStatus.COMPLETED;
 
-    const updatedTask = await this.tasksRepository.updateTaskStatus(id, newStatus);
+    const updatedTask = await this.tasksRepository.updateTaskStatus(
+      id,
+      newStatus,
+    );
     if (!updatedTask) {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
