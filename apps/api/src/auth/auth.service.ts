@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import crypto from 'crypto';
+import * as crypto from 'node:crypto';
 import { AppConfigService } from '../app-config/app-config.service';
 import { CacheService } from '../cache/cache.service';
 import { EmailService } from '../email/email.service';
@@ -46,7 +46,7 @@ export class AuthService {
     await this.cacheService.set(
       otpKey,
       otpPayload,
-      this.appConfigService.otp.expiryTime,
+      this.appConfigService.otp.expiryTime * 1000,
     );
 
     // Send OTP via email
@@ -72,13 +72,14 @@ export class AuthService {
 
     // Get stored OTP data
     const storedData = await this.cacheService.get<OtpPayload>(otpKey);
-
-    if (!storedData || storedData.otp !== otp) {
+    console.log('storedData', storedData, otp);
+    if (storedData?.otp !== otp) {
       throw new ForbiddenException('Invalid OTP');
     }
 
     let userId: string;
     let newUser = false;
+
     if (!storedData.userId) {
       const user = await this.authRepository.createUser(email);
       userId = user.id;
@@ -161,6 +162,7 @@ export class AuthService {
     return await this.jwtService.signAsync(
       { ...payload, type: 'access' },
       {
+        secret: this.appConfigService.jwt.accessTokenSecret,
         expiresIn: this.appConfigService.jwt.accessTokenExpiry,
       },
     );
@@ -172,6 +174,7 @@ export class AuthService {
     return await this.jwtService.signAsync(
       { ...payload, type: 'refresh' },
       {
+        secret: this.appConfigService.jwt.refreshTokenSecret,
         expiresIn: this.appConfigService.jwt.refreshTokenExpiry,
       },
     );

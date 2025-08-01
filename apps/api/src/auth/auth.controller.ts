@@ -38,12 +38,6 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Authentication successful',
-    schema: {
-      properties: {
-        access_token: { type: 'string' },
-        refresh_token: { type: 'string' },
-      },
-    },
   })
   @UsePipes(new JoiValidationPipe(verifyOtpSchema, 'body'))
   async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto) {

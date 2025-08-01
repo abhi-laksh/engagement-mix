@@ -2,6 +2,27 @@
 
 services:
 
+  # Mail testing service
+  inbucket:
+    image: inbucket/inbucket:latest
+    environment:
+      INBUCKET_WEB_ADDR: "0.0.0.0:6500"
+    ports:
+      - '2500:2500' # SMTP
+      - '6500:6500' # Web UI
+      - '1100:1100' # POP3
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+
+  
   db:
     container_name: db
     hostname: db

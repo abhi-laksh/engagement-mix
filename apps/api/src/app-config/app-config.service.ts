@@ -32,21 +32,24 @@ export class AppConfigService {
 
   get email() {
     return {
-      resendApiKey: this.configService.get<string>('RESEND_API_KEY'),
-      fromEmail:
-        this.configService.get<string>('FROM_EMAIL') ||
-        'TaskMaster <hello@taskmaster.com>',
+      fromEmail: this.configService.get<string>('FROM_EMAIL'),
+      host: this.configService.get<string>('SMTP_HOST'),
+      port: this.configService.get<number>('SMTP_PORT'),
+      username: this.configService.get<string>('SMTP_USERNAME'),
+      password: this.configService.get<string>('SMTP_PASSWORD'),
     };
   }
 
   get jwt() {
     return {
-      accessTokenSecret: this.configService.get<string>('JWT_ACCESS_SECRET'),
-      refreshTokenSecret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      accessTokenExpiry:
-        this.configService.get<string>('JWT_ACCESS_EXPIRY') ?? '15m',
-      refreshTokenExpiry:
-        this.configService.get<string>('JWT_REFRESH_EXPIRY') ?? '7d',
+      accessTokenSecret: this.configService.get<string>('ACCESS_TOKEN_SECRET'),
+      refreshTokenSecret: this.configService.get<string>(
+        'REFRESH_TOKEN_SECRET',
+      ),
+      accessTokenExpiry: this.configService.get<string>('ACCESS_TOKEN_EXPIRY'),
+      refreshTokenExpiry: this.configService.get<string>(
+        'REFRESH_TOKEN_EXPIRY',
+      ),
     };
   }
 

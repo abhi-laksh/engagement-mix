@@ -1,6 +1,5 @@
+import { ISendMailOptions, MailerService } from '@nestjs-modules/mailer';
 import { Injectable, Logger } from '@nestjs/common';
-import { Resend } from 'resend';
-import { AppConfigService } from '../app-config/app-config.service';
 
 export interface SendOtpEmailOptions {
   email: string;
@@ -11,17 +10,11 @@ export interface SendOtpEmailOptions {
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private resend: Resend;
 
-  constructor(private readonly configService: AppConfigService) {
-    const apiKey = this.configService.email.resendApiKey;
-    if (!apiKey) {
-      this.logger.warn(
-        'Resend API key not found. Email service will not work properly.',
-      );
-      return;
-    }
-    this.resend = new Resend(apiKey);
+  constructor(private readonly mailerService: MailerService) {}
+
+  async sendEmail(options: ISendMailOptions): Promise<void> {
+    await this.mailerService.sendMail(options);
   }
 
   async sendOtpEmail({
@@ -30,11 +23,6 @@ export class EmailService {
     isNewUser,
   }: SendOtpEmailOptions): Promise<boolean> {
     try {
-      if (!this.resend) {
-        this.logger.error('Resend is not initialized. Cannot send email.');
-        return false;
-      }
-
       const subject = isNewUser
         ? 'Welcome to TaskMaster - Verify your email'
         : 'TaskMaster - Your login code';
@@ -45,8 +33,7 @@ export class EmailService {
         email,
       });
 
-      const result = await this.resend.emails.send({
-        from: this.configService.email.fromEmail,
+      const result = await this.mailerService.sendMail({
         to: [email],
         subject,
         html,
