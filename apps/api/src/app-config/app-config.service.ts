@@ -7,7 +7,7 @@ export class AppConfigService {
 
   get app() {
     return {
-      port: this.configService.get<number>('PORT'),
+      port: this.configService.get<number>('PORT') ?? 5000,
     };
   }
 
