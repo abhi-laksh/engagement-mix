@@ -1,39 +1,29 @@
 import { CreateTaskData, Task, TaskStatus } from '@/types/task';
+import { nanoid } from 'nanoid';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
 interface TaskState {
-  tasks: Task[];
-  isLoading: boolean;
-  error: string | null;
+  allTasks: string[];
+  tasksById: Record<string, Task>;
 }
 
 interface TaskActions {
-  addTask: (task: CreateTaskData) => void;
+  addTask: (task: CreateTaskData | (CreateTaskData & { id: string }) | Task) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   toggleTaskComplete: (id: string) => void;
   reorderTasks: (startIndex: number, endIndex: number) => void;
-  
+  replaceTaskId: (tempId: string, realId: string) => void;
   setTasks: (tasks: Task[]) => void;
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
-  clearError: () => void;
-  
   getTaskById: (id: string) => Task | undefined;
-  getTasksByStatus: (status: TaskStatus) => Task[];
-  getTasksCount: () => number;
-  getCompletedTasksCount: () => number;
 }
 
 type TaskStore = TaskState & TaskActions;
 
-const generateId = () => Date.now().toString();
-
 const initialState: TaskState = {
-  tasks: [],
-  isLoading: false,
-  error: null,
+  allTasks: [],
+  tasksById: {},
 };
 
 export const useTaskStore = create<TaskStore>()(
@@ -41,103 +31,113 @@ export const useTaskStore = create<TaskStore>()(
     (set, get) => ({
       ...initialState,
 
-      addTask: (taskData: CreateTaskData) => {
-        const newTask: Task = {
-          id: generateId(),
-          ...taskData,
-          dueDate: new Date(taskData.dueDate),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
+      addTask: (taskData: CreateTaskData | (CreateTaskData & { id: string }) | Task) => {
+        let newTask: Task;
+        
+        if ('createdAt' in taskData) {
+          // Already a Task
+          newTask = taskData as Task;
+        } else {
+          // CreateTaskData with or without id
+          const createData = taskData as CreateTaskData | (CreateTaskData & { id: string });
+          newTask = {
+            id: 'id' in createData ? createData.id : nanoid(),
+            title: createData.title,
+            description: createData.description,
+            dueDate: new Date(createData.dueDate),
+            status: createData.status,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+        }
         
         set((state) => ({
-          tasks: [...state.tasks, newTask],
-          error: null,
+          allTasks: [...state.allTasks, newTask.id],
+          tasksById: { ...state.tasksById, [newTask.id]: newTask },
         }), false, 'addTask');
       },
 
       updateTask: (id: string, updates: Partial<Task>) => {
-        set((state) => ({
-          tasks: state.tasks.map((task) =>
-            task.id === id
-              ? { ...task, ...updates, updatedAt: new Date() }
-              : task
-          ),
-          error: null,
-        }), false, 'updateTask');
+        set((state) => {
+          const task = state.tasksById[id];
+          if (!task) return state;
+          
+          return {
+            tasksById: {
+              ...state.tasksById,
+              [id]: { ...task, ...updates, updatedAt: new Date() }
+            },
+          };
+        }, false, 'updateTask');
       },
 
       deleteTask: (id: string) => {
-        set((state) => ({
-          tasks: state.tasks.filter((task) => task.id !== id),
-          error: null,
-        }), false, 'deleteTask');
+        set((state) => {
+          const { [id]: deleted, ...restTasks } = state.tasksById;
+          return {
+            allTasks: state.allTasks.filter(taskId => taskId !== id),
+            tasksById: restTasks,
+          };
+        }, false, 'deleteTask');
       },
 
       toggleTaskComplete: (id: string) => {
-        set((state) => ({
-          tasks: state.tasks.map((task) =>
-            task.id === id
-              ? {
-                  ...task,
-                  status: task.status === TaskStatus.COMPLETED 
-                    ? TaskStatus.NOT_STARTED 
-                    : TaskStatus.COMPLETED,
-                  updatedAt: new Date(),
-                }
-              : task
-          ),
-          error: null,
-        }), false, 'toggleTaskComplete');
+        set((state) => {
+          const task = state.tasksById[id];
+          if (!task) return state;
+          
+          const newStatus = task.status === TaskStatus.COMPLETED 
+            ? TaskStatus.NOT_STARTED 
+            : TaskStatus.COMPLETED;
+            
+          return {
+            tasksById: {
+              ...state.tasksById,
+              [id]: { ...task, status: newStatus, updatedAt: new Date() }
+            },
+          };
+        }, false, 'toggleTaskComplete');
       },
 
       reorderTasks: (startIndex: number, endIndex: number) => {
         set((state) => {
-          const tasks = [...state.tasks];
-          const [reorderedItem] = tasks.splice(startIndex, 1);
-          tasks.splice(endIndex, 0, reorderedItem);
+          const allTasks = [...state.allTasks];
+          const [reorderedId] = allTasks.splice(startIndex, 1);
+          allTasks.splice(endIndex, 0, reorderedId);
           
           return {
-            tasks: tasks.map((task, index) => ({
-              ...task,
-              updatedAt: new Date(),
-            })),
-            error: null,
+            allTasks,
           };
         }, false, 'reorderTasks');
       },
 
+      replaceTaskId: (tempId: string, realId: string) => {
+        set((state) => {
+          const task = state.tasksById[tempId];
+          if (!task) return state;
+          
+          const { [tempId]: tempTask, ...restTasks } = state.tasksById;
+          return {
+            allTasks: state.allTasks.map(id => id === tempId ? realId : id),
+            tasksById: { ...restTasks, [realId]: { ...tempTask, id: realId } },
+          };
+        }, false, 'replaceTaskId');
+      },
 
       setTasks: (tasks: Task[]) => {
-        set({ tasks, error: null }, false, 'setTasks');
-      },
-
-      setLoading: (isLoading: boolean) => {
-        set({ isLoading }, false, 'setLoading');
-      },
-
-      setError: (error: string | null) => {
-        set({ error }, false, 'setError');
-      },
-
-      clearError: () => {
-        set({ error: null }, false, 'clearError');
+        const tasksById = tasks.reduce((acc, task) => {
+          acc[task.id] = task;
+          return acc;
+        }, {} as Record<string, Task>);
+        
+        set({ 
+          allTasks: tasks.map(task => task.id),
+          tasksById,
+        }, false, 'setTasks');
       },
 
       getTaskById: (id: string) => {
-        return get().tasks.find((task) => task.id === id);
-      },
-
-      getTasksByStatus: (status: TaskStatus) => {
-        return get().tasks.filter((task) => task.status === status);
-      },
-
-      getTasksCount: () => {
-        return get().tasks.length;
-      },
-
-      getCompletedTasksCount: () => {
-        return get().tasks.filter((task) => task.status === TaskStatus.COMPLETED).length;
+        return get().tasksById[id];
       },
     }),
     {
