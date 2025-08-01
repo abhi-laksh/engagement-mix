@@ -8,6 +8,8 @@ import { AuthController } from './auth.controller';
 import { AuthRepository } from './auth.repository';
 import { AuthService } from './auth.service';
 import { User, UserSchema } from './schemas/user.schema';
+import { RefreshTokenStrategy } from './strategy/refresh-token.strategy';
+import { JwtStrategy } from './strategy/jwt.strategy';
 
 @Module({
   imports: [
@@ -15,10 +17,10 @@ import { User, UserSchema } from './schemas/user.schema';
     CacheModule,
     EmailModule,
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
-    JwtModule.register({}), // We'll configure this in the service with secrets
+    JwtModule.register({}),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthRepository],
+  providers: [AuthService, AuthRepository, JwtStrategy, RefreshTokenStrategy],
   exports: [AuthService, AuthRepository],
 })
 export class AuthModule {}

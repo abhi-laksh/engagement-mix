@@ -30,7 +30,7 @@ export class AuthService {
 
     // Check if user exists
     const existingUser = await this.authRepository.findByEmail(email);
-    
+
     // Generate OTP
     const otp = this.generateOTP();
 
@@ -88,38 +88,16 @@ export class AuthService {
       userId = storedData.userId;
     }
 
-    // Delete OTP from cache
-    await this.cacheService.delete(otpKey);
+    const [accessToken, refreshToken] = await Promise.all([
+      this.createToken({ sub: userId, email }, 'access'),
+      this.createToken({ sub: userId, email }, 'refresh'),
+      this.cacheService.delete(otpKey),
+    ]);
 
     return {
-      tokens: await this.createTokens({
-        sub: userId,
-        email,
-      }),
+      accessToken,
+      refreshToken,
     };
-  }
-
-  async refreshBothTokens(userFromToken: JwtPayload) {
-    try {
-      if (!userFromToken.sub || !userFromToken.type) {
-        throw new ForbiddenException('Invalid token');
-      }
-
-      const user = await this.authRepository.findById(userFromToken.sub);
-
-      if (!user) {
-        throw new ForbiddenException('Invalid token');
-      }
-
-      return {
-        tokens: await this.createTokens({
-          sub: user.id,
-          email: user.email,
-        }),
-      };
-    } catch {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
   }
 
   async refreshAccessToken(userFromToken: JwtPayload) {
@@ -130,7 +108,7 @@ export class AuthService {
     }
 
     return {
-      accessToken: await this.createAccessToken(userFromToken),
+      accessToken: await this.createToken(userFromToken, 'access'),
     };
   }
 
@@ -156,38 +134,26 @@ export class AuthService {
     return crypto.randomInt(min, max + 1).toString();
   }
 
-  private async createAccessToken(
+  private async createToken(
     payload: Omit<JwtPayload, 'type'>,
+    type: 'access' | 'refresh',
   ): Promise<string> {
+    const secret =
+      type === 'access'
+        ? this.appConfigService.jwt.accessTokenSecret
+        : this.appConfigService.jwt.refreshTokenSecret;
+
+    const expiresIn =
+      type === 'access'
+        ? this.appConfigService.jwt.accessTokenExpiry
+        : this.appConfigService.jwt.refreshTokenExpiry;
+
     return await this.jwtService.signAsync(
-      { ...payload, type: 'access' },
+      { sub: payload.sub, email: payload.email, type },
       {
-        secret: this.appConfigService.jwt.accessTokenSecret,
-        expiresIn: this.appConfigService.jwt.accessTokenExpiry,
+        secret,
+        expiresIn,
       },
     );
-  }
-
-  private async createRefreshToken(
-    payload: Omit<JwtPayload, 'type'>,
-  ): Promise<string> {
-    return await this.jwtService.signAsync(
-      { ...payload, type: 'refresh' },
-      {
-        secret: this.appConfigService.jwt.refreshTokenSecret,
-        expiresIn: this.appConfigService.jwt.refreshTokenExpiry,
-      },
-    );
-  }
-
-  private async createTokens(payload: Omit<JwtPayload, 'type'>) {
-    const [accessToken, refreshToken] = await Promise.all([
-      this.createAccessToken(payload),
-      this.createRefreshToken(payload),
-    ]);
-    return {
-      accessToken,
-      refreshToken,
-    };
   }
 }

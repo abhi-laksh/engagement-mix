@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { JoiValidationPipe } from '../shared/pipes/joi-validation.pipe';
 import { AuthService } from './auth.service';
 import { GetUser } from './decorators/get-user.decorator';
+import { Public } from './decorators/public.decorator';
 import { InitiateAuthDto } from './dtos/initiate-auth.dto';
 import { VerifyOtpDto } from './dtos/verify-otp.dto';
 import { initiateAuthSchema } from './schemas/initiate-auth.schema';
@@ -14,7 +15,7 @@ import { JwtPayload } from './types/auth.type';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  
+  @Public()
   @Post('initiate')
   @ApiOperation({ summary: 'Initiate authentication with email' })
   @ApiResponse({
@@ -32,7 +33,7 @@ export class AuthController {
     return await this.authService.initiateAuth(email);
   }
 
-  
+  @Public()
   @Post('verify-otp')
   @ApiOperation({ summary: 'Verify OTP and complete authentication' })
   @ApiResponse({
@@ -44,13 +45,8 @@ export class AuthController {
     return await this.authService.verifyOtp(verifyOtpDto);
   }
 
-  @Get('refresh')
-  @ApiOperation({ summary: 'Refresh access and refresh tokens' })
-  async refresh(@GetUser() userFromToken: JwtPayload) {
-    return await this.authService.refreshBothTokens(userFromToken);
-  }
-
   @Get('refresh-access')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Refresh access token' })
   async refreshAccess(@GetUser() userFromToken: JwtPayload) {
     return await this.authService.refreshAccessToken(userFromToken);
