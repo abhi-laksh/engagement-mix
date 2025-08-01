@@ -4,6 +4,7 @@ import { AppConfigModule } from './app-config/app-config.module';
 import { AppConfigService } from './app-config/app-config.service';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
 import { EmailModule } from './email/email.module';
 import { TasksModule } from './tasks/tasks.module';
 
@@ -17,6 +18,7 @@ import { TasksModule } from './tasks/tasks.module';
       }),
       inject: [AppConfigService],
     }),
+    AuthModule,
     EmailModule,
     TasksModule,
   ],

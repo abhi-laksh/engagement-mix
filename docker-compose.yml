@@ -103,7 +103,6 @@ services:
     volumes:
       - ./apps/web:/app
       - /app/node_modules
-      - /app/.next
     depends_on:
       - api_dev
     networks:
@@ -127,6 +126,7 @@ volumes:
   db_data:
   db_config:
   api_dist:
+  next_data:
   redis_data:
 
 
