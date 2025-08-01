@@ -1,0 +1,135 @@
+# version: "3.8" (removed as it's deprecated in newer Docker Compose versions)
+
+services:
+
+  db:
+    container_name: db
+    hostname: db
+    image: mongo:latest
+    restart: always
+    ports:
+      - '27017:27017'
+    networks:
+      - app-network
+    volumes:
+      - db_data:/data/db
+      - db_config:/data/configdb
+    command: mongod --bind_ip_all
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      start_period: 30s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  redis:
+    image: redis:alpine
+    command: redis-server --loglevel warning
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    networks:
+      - app-network
+    healthcheck:
+      test: [ 'CMD', 'redis-cli', '-p', '6379', 'ping' ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api_dev:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile.dev
+    container_name: api_dev
+    hostname: api_dev
+    init: true
+    restart: unless-stopped
+    volumes:
+      - ./apps/api:/app
+      - /app/node_modules
+    ports:
+      - "4001:4001"
+      - "9229:9229"  # Debug port
+    env_file:
+      - path: ./apps/api/.env
+        required: true
+    command: pnpm start:debug
+    depends_on:
+      db:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    shm_size: 1G
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 2G
+
+  # Next.js App
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: web-app
+    hostname: web
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./apps/web/.env
+    restart: unless-stopped
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - api_dev
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  db_data:
+  db_config:
+  api_dist:
+  redis_data:
+
+
+networks:
+  app-network:
+    driver: bridge

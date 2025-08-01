@@ -38,7 +38,7 @@
 # ENV
 **/.env*
 **/*.env
-**/.env.example
+.env.example
 
 # storybook
 **/storybook.log
