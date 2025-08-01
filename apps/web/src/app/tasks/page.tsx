@@ -1,12 +1,14 @@
 "use client";
 
-import { AddTaskModal } from "@/components/tasks/TaskFormModal";
-import TaskList from "@/components/tasks/TaskList";
-import { CreateTaskData, Task, TaskStatus } from "@/types/task";
+import SortableTaskList from "@/components/tasks/SortableTaskList";
+import { AddTaskModal, EditTaskModal } from "@/components/tasks/TaskFormModal";
+import { useTaskStore } from "@/store/taskStore";
+import { Task, TaskStatus } from "@/types/task";
 import { Button, Container, Group, Title } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+// Mock data for initial load
 const mockTasks: Task[] = [
   {
     id: "1",
@@ -47,19 +49,26 @@ const mockTasks: Task[] = [
 ];
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<Task[]>(mockTasks);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { tasks, setTasks } = useTaskStore();
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  const handleCreateTask = (taskData: CreateTaskData) => {
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      ...taskData,
-      dueDate: new Date(taskData.dueDate),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    
-    setTasks(prev => [...prev, newTask]);
+  // Initialize with mock data on first load
+  useEffect(() => {
+    if (tasks.length === 0) {
+      setTasks(mockTasks);
+    }
+  }, [tasks.length, setTasks]);
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingTask(null);
   };
 
   return (
@@ -70,19 +79,24 @@ export default function TasksPage() {
         </Title>
         <Button
           leftSection={<IconPlus size={16} />}
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => setIsAddModalOpen(true)}
           size="md"
         >
           Add Task
         </Button>
       </Group>
 
-      <TaskList tasks={tasks} />
+      <SortableTaskList tasks={tasks} onEditTask={handleEditTask} />
 
       <AddTaskModal
-        opened={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleCreateTask}
+        opened={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+      />
+
+      <EditTaskModal
+        opened={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        task={editingTask}
       />
     </Container>
   );

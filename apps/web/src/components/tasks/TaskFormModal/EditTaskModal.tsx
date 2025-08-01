@@ -2,7 +2,7 @@
 
 import { CreateTaskFormData, createTaskSchema } from "@/lib/validations/task";
 import { useTaskStore } from "@/store/taskStore";
-import { TaskStatus } from "@/types/task";
+import { Task, TaskStatus } from "@/types/task";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
     Box,
@@ -14,17 +14,20 @@ import {
     TextInput,
     Textarea
 } from "@mantine/core";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import DateInput from "./DateInput";
 import StatusInput from "./StatusInput";
 
-interface AddTaskModalProps {
+interface EditTaskModalProps {
   opened: boolean;
   onClose: () => void;
+  task: Task | null;
 }
 
-export default function AddTaskModal({ opened, onClose }: AddTaskModalProps) {
-  const { addTask } = useTaskStore();
+export default function EditTaskModal({ opened, onClose, task }: EditTaskModalProps) {
+  const { updateTask } = useTaskStore();
+
   const form = useForm<CreateTaskFormData>({
     resolver: zodResolver(createTaskSchema),
     mode: "onSubmit",
@@ -36,11 +39,28 @@ export default function AddTaskModal({ opened, onClose }: AddTaskModalProps) {
     },
   });
 
+  // Update form when task changes
+  useEffect(() => {
+    if (task && opened) {
+      form.reset({
+        title: task.title,
+        description: task.description,
+        dueDate: task.dueDate.toISOString().split('T')[0],
+        status: task.status,
+      });
+    }
+  }, [task, opened, form]);
+
   const handleSubmit = (data: CreateTaskFormData) => {
-    addTask({
-      ...data,
-      status: data.status as TaskStatus
+    if (!task) return;
+    
+    updateTask(task.id, {
+      title: data.title,
+      description: data.description,
+      dueDate: new Date(data.dueDate),
+      status: data.status as TaskStatus,
     });
+    
     handleClose();
   };
 
@@ -49,11 +69,13 @@ export default function AddTaskModal({ opened, onClose }: AddTaskModalProps) {
     onClose();
   };
 
+  if (!task) return null;
+
   return (
     <Modal
       opened={opened}
       onClose={handleClose}
-      title="Add New Task"
+      title="Edit Task"
       size="lg"
       centered
       styles={{
@@ -115,7 +137,7 @@ export default function AddTaskModal({ opened, onClose }: AddTaskModalProps) {
               loading={form.formState.isSubmitting}
               disabled={!form.formState.isValid && form.formState.isSubmitted}
             >
-              Create Task
+              Update Task
             </Button>
           </Group>
         </div>
