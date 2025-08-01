@@ -33,6 +33,27 @@ export class AppConfigService {
   get email() {
     return {
       resendApiKey: this.configService.get<string>('RESEND_API_KEY'),
+      fromEmail:
+        this.configService.get<string>('FROM_EMAIL') ||
+        'TaskMaster <hello@taskmaster.com>',
+    };
+  }
+
+  get jwt() {
+    return {
+      accessTokenSecret: this.configService.get<string>('JWT_ACCESS_SECRET'),
+      refreshTokenSecret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      accessTokenExpiry:
+        this.configService.get<string>('JWT_ACCESS_EXPIRY') ?? '15m',
+      refreshTokenExpiry:
+        this.configService.get<string>('JWT_REFRESH_EXPIRY') ?? '7d',
+    };
+  }
+
+  get otp() {
+    return {
+      expiryTime: this.configService.get<number>('OTP_EXPIRY_TIME') ?? 300, // 5 minutes in seconds
+      length: this.configService.get<number>('OTP_LENGTH') ?? 6,
     };
   }
 }

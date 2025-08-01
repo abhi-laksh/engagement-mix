@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AppConfigModule } from '../app-config/app-config.module';
-import { EmailService } from './email.service';
+import { CacheService } from './cache.service';
 
 @Module({
   imports: [AppConfigModule],
-  providers: [EmailService],
-  exports: [EmailService],
+  providers: [CacheService],
+  exports: [CacheService],
 })
-export class EmailModule {}
+export class CacheModule {}
