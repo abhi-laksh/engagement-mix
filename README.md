@@ -26,3 +26,11 @@ You're building a basic-fullstack ToDo app. Use NestJS + MongoDB for backend and
 •⁠  ⁠Task management screens
 •⁠  ⁠Use any state management (Redux / Zustand / Context, etc)
 •⁠  ⁠Use UI component Library of your choice (MUI, ShadCN, etc)
+
+---
+Video: 
+
+<video width="480" controls>
+  <source src="demo.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
