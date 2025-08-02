@@ -20,7 +20,7 @@ export default function TaskList({ tasks }: TaskListProps) {
   return (
     <div className="space-y-4">
       {tasks.map((task) => (
-        <TaskItem key={task.id} task={task} />
+        <TaskItem key={task._id} task={task} />
       ))}
     </div>
   );

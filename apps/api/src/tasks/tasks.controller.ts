@@ -7,21 +7,21 @@ import {
   Patch,
   Post,
   Query,
-  UsePipes
+  UsePipes,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiOperation,
   ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { JwtPayload } from 'src/auth/types/auth.type';
 import { JoiValidationPipe } from '../shared/pipes/joi-validation.pipe';
 import { CreateTaskDto } from './dtos/create.dto';
-import {
-  QueryTasksDto,
-  TasksResponseDto,
-} from './dtos/query.dto';
+import { QueryTasksDto, TasksResponseDto } from './dtos/query.dto';
 import { TaskDto } from './dtos/task.dto';
 import { UpdateTaskDto } from './dtos/update.dto';
 import { createTaskSchema } from './schemas/create.schema';
@@ -46,9 +46,13 @@ export class TasksController {
     status: 400,
     description: 'Invalid input data',
   })
+  @ApiBearerAuth()
   @UsePipes(new JoiValidationPipe(createTaskSchema, 'body'))
-  async create(@Body() createTaskDto: CreateTaskDto) {
-    return this.tasksService.create(createTaskDto);
+  async create(
+    @Body() createTaskDto: CreateTaskDto,
+    @GetUser() user: JwtPayload,
+  ) {
+    return this.tasksService.create(createTaskDto, user);
   }
 
   @Get()
@@ -60,9 +64,10 @@ export class TasksController {
     description: 'Tasks retrieved successfully',
     type: TasksResponseDto,
   })
+  @ApiBearerAuth()
   @UsePipes(new JoiValidationPipe(queryTasksSchema, 'query'))
-  async findAll(@Query() queryDto: QueryTasksDto) {
-    return this.tasksService.findAll(queryDto);
+  async findAll(@Query() queryDto: QueryTasksDto, @GetUser() user: JwtPayload) {
+    return this.tasksService.findAll(queryDto, user);
   }
 
   @Get(':id')
@@ -85,8 +90,9 @@ export class TasksController {
     status: 400,
     description: 'Invalid task ID format',
   })
-  async findOne(@Param('id') id: string) {
-    return this.tasksService.findOne(id);
+  @ApiBearerAuth()
+  async findOne(@Param('id') id: string, @GetUser() user: JwtPayload) {
+    return this.tasksService.findOne(id, user);
   }
 
   @Patch(':id')
@@ -110,9 +116,14 @@ export class TasksController {
     status: 400,
     description: 'Invalid input data or task ID format',
   })
+  @ApiBearerAuth()
   @UsePipes(new JoiValidationPipe(updateTaskSchema, 'body'))
-  async update(@Param('id') id: string, @Body() updateTaskDto: UpdateTaskDto) {
-    return this.tasksService.update(id, updateTaskDto);
+  async update(
+    @Param('id') id: string,
+    @Body() updateTaskDto: UpdateTaskDto,
+    @GetUser() user: JwtPayload,
+  ) {
+    return this.tasksService.update(id, updateTaskDto, user);
   }
 
   @Delete(':id')
@@ -140,8 +151,9 @@ export class TasksController {
     status: 400,
     description: 'Invalid task ID format',
   })
-  async remove(@Param('id') id: string) {
-    await this.tasksService.remove(id);
+  @ApiBearerAuth()
+  async remove(@Param('id') id: string, @GetUser() user: JwtPayload) {
+    await this.tasksService.remove(id, user);
     return { message: 'Task deleted successfully' };
   }
 
@@ -165,7 +177,8 @@ export class TasksController {
     status: 400,
     description: 'Invalid task ID format',
   })
-  async toggleComplete(@Param('id') id: string) {
-    return this.tasksService.toggleComplete(id);
+  @ApiBearerAuth()
+  async toggleComplete(@Param('id') id: string, @GetUser() user: JwtPayload) {
+    return this.tasksService.toggleComplete(id, user);
   }
 }

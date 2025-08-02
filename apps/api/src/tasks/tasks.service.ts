@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { JwtPayload } from 'src/auth/types/auth.type';
 import { TaskStatus } from '../shared/constants';
 import { throwIfInvalidObjectId } from '../shared/utils';
 import { CreateTaskDto } from './dtos/create.dto';
@@ -11,18 +12,18 @@ import { TasksQueryResult, TasksRepository } from './tasks.repository';
 export class TasksService {
   constructor(private readonly tasksRepository: TasksRepository) {}
 
-  async create(createTaskDto: CreateTaskDto): Promise<TaskDocument> {
-    return this.tasksRepository.create(createTaskDto);
+  async create(createTaskDto: CreateTaskDto, user: JwtPayload): Promise<TaskDocument> {
+    return this.tasksRepository.create(createTaskDto, user.sub);
   }
 
-  async findAll(queryDto: QueryTasksDto): Promise<TasksQueryResult> {
-    return this.tasksRepository.findAll(queryDto);
+  async findAll(queryDto: QueryTasksDto, user: JwtPayload): Promise<TasksQueryResult> {
+    return this.tasksRepository.findAll(queryDto, user.sub);
   }
 
-  async findOne(id: string): Promise<TaskDocument> {
+  async findOne(id: string, user: JwtPayload): Promise<TaskDocument> {
     throwIfInvalidObjectId(id);
 
-    const task = await this.tasksRepository.findById(id);
+    const task = await this.tasksRepository.findById(id, user.sub);
     if (!task) {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
@@ -33,10 +34,11 @@ export class TasksService {
   async update(
     id: string,
     updateTaskDto: UpdateTaskDto,
+    user: JwtPayload,
   ): Promise<TaskDocument> {
     throwIfInvalidObjectId(id);
 
-    const updatedTask = await this.tasksRepository.update(id, updateTaskDto);
+    const updatedTask = await this.tasksRepository.update(id, updateTaskDto, user.sub);
     if (!updatedTask) {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
@@ -44,32 +46,20 @@ export class TasksService {
     return updatedTask;
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, user: JwtPayload): Promise<void> {
     throwIfInvalidObjectId(id);
 
-    const deletedTask = await this.tasksRepository.delete(id);
+    const deletedTask = await this.tasksRepository.delete(id, user.sub);
     if (!deletedTask) {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
   }
 
-  async reorderTasks(taskIds: string[]): Promise<void> {
-    // Validate all task IDs
-    taskIds.forEach((id) => throwIfInvalidObjectId(id, 'taskId'));
-
-    // Verify all tasks exist
-    const existingTasks = await this.tasksRepository.findByIds(taskIds);
-    if (existingTasks.length !== taskIds.length) {
-      throw new NotFoundException('One or more tasks not found');
-    }
-
-    await this.tasksRepository.reorderTasks(taskIds);
-  }
-
-  async toggleComplete(id: string): Promise<TaskDocument> {
+  async toggleComplete(id: string, user: JwtPayload): Promise<TaskDocument> {
     throwIfInvalidObjectId(id);
 
-    const task = await this.tasksRepository.findById(id);
+    const task = await this.tasksRepository.findById(id, user.sub);
+
     if (!task) {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
@@ -82,7 +72,9 @@ export class TasksService {
     const updatedTask = await this.tasksRepository.updateTaskStatus(
       id,
       newStatus,
+      user.sub,
     );
+
     if (!updatedTask) {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }

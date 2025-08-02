@@ -1,7 +1,13 @@
 "use client";
 
-import { useCreateTask, useGetTasks, useUpdateTask } from "@/api-services/tasks";
+import {
+  useCreateTask,
+  useGetTasks,
+  useUpdateTask
+} from "@/api-services/tasks";
+import { TaskStatus as APITaskStatus, QueryTasksRequest, TasksListResponse } from "@/api-services/tasks/types";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import FilterTask from "@/components/tasks/FilterTask";
 import SortableTaskList from "@/components/tasks/SortableTaskList";
 import TaskFormModal from "@/components/tasks/TaskFormModal/TaskFormModal";
 import { CreateTaskFormData } from "@/lib/validations/task";
@@ -10,77 +16,54 @@ import { useTaskStore } from "@/store/taskStore";
 import { Task, TaskStatus } from "@/types/task";
 import { Button, Container, Group, Title } from "@mantine/core";
 import { IconLogout, IconPlus } from "@tabler/icons-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-
-// Mock data for initial load
-const mockTasks: Task[] = [
-  {
-    id: "1",
-    title: "Complete project documentation",
-    description: "Write comprehensive documentation for the new task management system including API endpoints, component usage, and deployment instructions.",
-    dueDate: new Date("2024-12-25"),
-    status: TaskStatus.IN_PROGRESS,
-    createdAt: new Date("2024-12-15"),
-    updatedAt: new Date("2024-12-20"),
-  },
-  {
-    id: "2", 
-    title: "Review code changes",
-    description: "Review and approve pending pull requests for the authentication module.",
-    dueDate: new Date("2024-12-23"),
-    status: TaskStatus.NOT_STARTED,
-    createdAt: new Date("2024-12-18"),
-    updatedAt: new Date("2024-12-18"),
-  },
-  {
-    id: "3",
-    title: "Deploy to production",
-    description: "Deploy the latest version of the application to production environment after testing.",
-    dueDate: new Date("2024-12-30"),
-    status: TaskStatus.COMPLETED,
-    createdAt: new Date("2024-12-10"),
-    updatedAt: new Date("2024-12-22"),
-  },
-  {
-    id: "4",
-    title: "Update dependencies",
-    description: "Update all npm packages to their latest versions and test for compatibility issues.",
-    dueDate: new Date("2024-12-28"),
-    status: TaskStatus.CANCELLED,
-    createdAt: new Date("2024-12-16"),
-    updatedAt: new Date("2024-12-21"),
-  },
-];
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 function TasksPageContent() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const router = useRouter();
-  
-  // Use query hooks
-  const { data: tasksData, isLoading } = useGetTasks();
+  const searchParams = useSearchParams();
+
+  // Create query parameters from URL
+  const queryParams = useMemo((): QueryTasksRequest => {
+    const params: QueryTasksRequest = {};
+    
+    const status = searchParams.get("status");
+    const dueDate = searchParams.get("dueDate");
+    
+    // Only add non-empty values
+    if (status && status.trim() !== "") {
+      params.status = status as APITaskStatus;
+    }
+    
+    if (dueDate && dueDate.trim() !== "") {
+      params.dueDate = dueDate;
+    }
+    
+    return params;
+  }, [searchParams]);
+
+  // Use mutation and query hooks
   const createTaskMutation = useCreateTask();
   const updateTaskMutation = useUpdateTask();
-  
-  // Access zustand stores
-  const allTasks = useTaskStore(state => state.allTasks);
-  const tasksById = useTaskStore(state => state.tasksById);
-  const setTasks = useTaskStore(state => state.setTasks);
-  const { user, clearAuth } = useAuthStore();
-  
-  // Get tasks array from normalized state
-  const tasks = allTasks.map(id => tasksById[id]).filter(Boolean);
+  const { data: tasksData } = useGetTasks(queryParams) as { data: TasksListResponse | undefined };
 
-  // Initialize with server data when available, fallback to mock data
+  // Access zustand stores
+  const { setTasks } = useTaskStore();
+  const allTasks = useTaskStore((state) => state.allTasks);
+  const tasksById = useTaskStore((state) => state.tasksById);
+  const { user, clearAuth } = useAuthStore();
+
+  // Update store when data changes
   useEffect(() => {
-    if ((tasksData as any)?.data?.tasks) {
-      setTasks((tasksData as any).data.tasks);
-    } else if (tasks.length === 0 && !isLoading) {
-      // Fallback to mock data if no server data and not loading
-      setTasks(mockTasks);
+    if (tasksData && tasksData.tasks) {
+      setTasks(tasksData.tasks);
     }
-  }, [tasksData, setTasks, tasks.length, isLoading]);
+  }, [tasksData, setTasks]);
+
+  // Get tasks array from normalized state
+  const tasks = allTasks.map((id) => tasksById[id]).filter(Boolean);
 
   const handleAddTask = () => {
     setEditingTask(null);
@@ -101,13 +84,13 @@ function TasksPageContent() {
     if (task) {
       // Edit mode
       updateTaskMutation.mutate({
-        id: task.id,
+        id: task._id,
         data: {
           title: data.title,
           description: data.description,
           dueDate: data.dueDate,
           status: data.status as TaskStatus,
-        }
+        },
       });
     } else {
       // Add mode
@@ -158,7 +141,9 @@ function TasksPageContent() {
         </Group>
       </Group>
 
-      <SortableTaskList tasks={tasks} onEditTask={handleEditTask} />
+      <FilterTask />
+
+      <SortableTaskList onEditTask={handleEditTask} />
 
       <TaskFormModal
         opened={isModalOpen}

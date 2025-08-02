@@ -54,6 +54,14 @@ export class QueryTasksDto {
     default: SortOrder.DESC,
   })
   sortOrder?: SortOrder;
+
+  @ApiProperty({
+    description: 'Filter tasks by due date (YYYY-MM-DD format)',
+    example: '2024-01-15',
+    pattern: '^\\d{4}-\\d{2}-\\d{2}$',
+    required: false,
+  })
+  dueDate?: string;
 }
 
 

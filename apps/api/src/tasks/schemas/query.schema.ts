@@ -33,5 +33,10 @@ export const queryTasksSchema = Joi.object({
     .messages({
       'any.only': 'Sort order must be either "asc" or "desc"',
     }),
+  dueDate: Joi.string()
+    .pattern(/^\d{4}-\d{2}-\d{2}$/)
+    .messages({
+      'string.pattern.base': 'Due date must be in YYYY-MM-DD format',
+    }),
 });
 

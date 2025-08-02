@@ -26,6 +26,7 @@ export interface QueryTasksRequest {
   search?: string;
   sortBy?: keyof Task;
   sortOrder?: SortOrder;
+  dueDate?: string; // YYYY-MM-DD format
 }
 
 // Paginated response wrapper

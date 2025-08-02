@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useAuthStore } from "../../store/authStore";
 import { getMe, initiateAuth, refresh, verifyOtp } from "./requests";
 import { AuthResponse, InitiateAuthDto, User, VerifyOtpDto } from "./types";
@@ -49,13 +49,13 @@ export function useRefresh() {
   });
 }
 
-export function useMe(options?: any) {
+// This is because when calling query using useQuery(), isFetching is not working as expected
+export function useMe() {
   const setUser = useAuthStore((state) => state.setUser);
   const clearAuth = useAuthStore((state) => state.clearAuth);
-
-  return useQuery({
-    queryKey: ["auth", "me"],
-    queryFn: async () => {
+  
+  return useMutation<User, unknown, void>({
+    mutationFn: async () => {
       const response = await getMe();
       return response.data;
     },
@@ -65,7 +65,5 @@ export function useMe(options?: any) {
     onError: () => {
       clearAuth();
     },
-    enabled: false,
-    ...options,
   });
 }

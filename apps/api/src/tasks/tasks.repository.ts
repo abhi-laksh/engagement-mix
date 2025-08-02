@@ -19,17 +19,21 @@ export interface TasksQueryResult {
 export class TasksRepository {
   constructor(@InjectModel(Task.name) private taskModel: Model<TaskDocument>) {}
 
-  async create(createTaskDto: CreateTaskDto): Promise<TaskDocument> {
+  async create(
+    createTaskDto: CreateTaskDto,
+    userId: string,
+  ): Promise<TaskDocument> {
     const highestOrder = await this.getHighestOrder();
     const taskData = {
       ...createTaskDto,
       order: highestOrder + 1,
+      createdBy: userId,
     };
     const createdTask = new this.taskModel(taskData);
     return createdTask.save();
   }
 
-  async findAll(queryDto: QueryTasksDto): Promise<TasksQueryResult> {
+  async findAll(queryDto: QueryTasksDto, userId: string): Promise<TasksQueryResult> {
     const {
       page = 1,
       limit = 10,
@@ -37,6 +41,7 @@ export class TasksRepository {
       search,
       sortBy = 'createdAt',
       sortOrder = SortOrder.DESC,
+      dueDate,
     } = queryDto;
 
     const skip = (page - 1) * limit;
@@ -53,17 +58,27 @@ export class TasksRepository {
       ];
     }
 
+    if (dueDate) {
+      // Create date range for the entire day (00:00:00 to 23:59:59)
+      const startOfDay = new Date(dueDate + 'T00:00:00.000Z');
+      const endOfDay = new Date(dueDate + 'T23:59:59.999Z');
+      filter.dueDate = {
+        $gte: startOfDay,
+        $lte: endOfDay,
+      };
+    }
+
     const sortOptions: Record<string, 1 | -1> = {};
     sortOptions[sortBy] = sortOrder === SortOrder.ASC ? 1 : -1;
 
     const [tasks, total] = await Promise.all([
       this.taskModel
-        .find(filter)
+        .find({ ...filter, createdBy: userId })
         .sort(sortOptions)
         .skip(skip)
         .limit(limit)
         .exec(),
-      this.taskModel.countDocuments(filter).exec(),
+      this.taskModel.countDocuments({ ...filter, createdBy: userId }).exec(),
     ]);
 
     const totalPages = Math.ceil(total / limit);
@@ -77,21 +92,26 @@ export class TasksRepository {
     };
   }
 
-  async findById(id: string): Promise<TaskDocument | null> {
-    return this.taskModel.findById(id).exec();
+  async findById(id: string, userId: string): Promise<TaskDocument | null> {
+    return this.taskModel.findOne({ _id: id, createdBy: userId }).exec();
   }
 
   async update(
     id: string,
     updateTaskDto: UpdateTaskDto,
+    userId: string,
   ): Promise<TaskDocument | null> {
     return this.taskModel
-      .findByIdAndUpdate(id, updateTaskDto, { new: true })
+      .findByIdAndUpdate(
+        id,
+        { ...updateTaskDto, createdBy: userId },
+        { new: true },
+      )
       .exec();
   }
 
-  async delete(id: string): Promise<TaskDocument | null> {
-    return this.taskModel.findByIdAndDelete(id).exec();
+  async delete(id: string, userId: string): Promise<TaskDocument | null> {
+    return this.taskModel.findByIdAndDelete({ _id: id, createdBy: userId }).exec();
   }
 
   async reorderTasks(taskIds: string[]): Promise<void> {
@@ -105,17 +125,18 @@ export class TasksRepository {
     await this.taskModel.bulkWrite(bulkOps);
   }
 
-  async findByIds(taskIds: string[]): Promise<TaskDocument[]> {
+  async findByIds(taskIds: string[], userId: string): Promise<TaskDocument[]> {
     const objectIds = taskIds.map((id) => new Types.ObjectId(id));
-    return this.taskModel.find({ _id: { $in: objectIds } }).exec();
+    return this.taskModel.find({ _id: { $in: objectIds }, createdBy: userId }).exec();
   }
 
   async updateTaskStatus(
     id: string,
     status: TaskStatus,
+    userId: string,
   ): Promise<TaskDocument | null> {
     return this.taskModel
-      .findByIdAndUpdate(id, { status }, { new: true })
+      .findByIdAndUpdate({ _id: id, createdBy: userId }, { status }, { new: true })
       .exec();
   }
 

@@ -62,7 +62,7 @@ export default function AuthForm() {
         otp: data.otp 
       });
 
-      await fetchUser.refetch();
+      await fetchUser.mutateAsync();
       
       router.push("/tasks");
     } catch (error) {

@@ -13,6 +13,7 @@ import {
   TextInput,
   Textarea
 } from "@mantine/core";
+import dayjs from "dayjs";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import DateInput from "./DateInput";
@@ -34,7 +35,7 @@ export default function TaskFormModal({ opened, onClose, task, onSubmit }: TaskF
     defaultValues: {
       title: "",
       description: "",
-      dueDate: new Date().toISOString().split('T')[0],
+      dueDate: dayjs().format('YYYY-MM-DD'),
       status: TaskStatus.NOT_STARTED,
     },
   });
@@ -45,7 +46,7 @@ export default function TaskFormModal({ opened, onClose, task, onSubmit }: TaskF
       form.reset({
         title: task.title,
         description: task.description,
-        dueDate: task.dueDate.toISOString().split('T')[0],
+        dueDate: dayjs(task.dueDate).format('YYYY-MM-DD'),
         status: task.status,
       });
     } else if (!task && opened) {
@@ -53,7 +54,7 @@ export default function TaskFormModal({ opened, onClose, task, onSubmit }: TaskF
       form.reset({
         title: "",
         description: "",
-        dueDate: new Date().toISOString().split('T')[0],
+        dueDate: dayjs().format('YYYY-MM-DD'),
         status: TaskStatus.NOT_STARTED,
       });
     }

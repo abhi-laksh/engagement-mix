@@ -16,7 +16,7 @@ export default function DraggableTaskItem({ task, onEdit }: DraggableTaskItemPro
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id });
+  } = useSortable({ id: task._id });
 
   const style = {
     transform: CSS.Transform.toString(transform),

@@ -6,10 +6,10 @@ export enum TaskStatus {
 }
 
 export interface Task {
-  id: string;
+  _id: string;
   title: string;
   description: string;
-  dueDate: Date;
+  dueDate: string;
   status: TaskStatus;
   createdAt: Date;
   updatedAt: Date;

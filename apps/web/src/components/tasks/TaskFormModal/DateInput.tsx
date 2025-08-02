@@ -1,8 +1,10 @@
 "use client";
 
+import { formatDateForDisplay } from "@/lib/utils";
 import { Box, Popover, Text } from "@mantine/core";
 import { DatePicker } from "@mantine/dates";
 import { IconCalendarEvent } from "@tabler/icons-react";
+import dayjs from "dayjs";
 import { useState } from "react";
 import { Control, Controller, FieldError } from "react-hook-form";
 
@@ -45,15 +47,11 @@ export default function DateInput({
               <div
                 role="button"
                 onClick={() => setOpened(true)}
-                className="w-full p-3 cursor-pointer border-2 border-gray-300 rounded-md hover:border-blue-400 focus:border-blue-500 focus:outline-none transition-colors flex items-center gap-3 bg-white"
+                className="w-full p-3 cursor-pointer border-1 border-gray-300 rounded-md hover:border-blue-400 focus:border-blue-500 focus:outline-none transition-colors flex items-center gap-3 bg-white"
               >
                 <IconCalendarEvent size={18} className="text-gray-500" />
                 <Text size="md" className="flex-1 text-left">
-                  {field.value ? new Date(field.value).toLocaleDateString('en-US', { 
-                    month: 'short', 
-                    day: '2-digit', 
-                    year: 'numeric' 
-                  }) : placeholder}
+                  {field.value ? formatDateForDisplay(field.value) : placeholder}
                 </Text>
               </div>
             </Popover.Target>
@@ -63,8 +61,7 @@ export default function DateInput({
                 onChange={(value: Date | string | null) => {
                   if (value) {
                     if (value instanceof Date) {
-                      const dateString = value.toISOString().split('T')[0];
-                      field.onChange(dateString);
+                      field.onChange(dayjs(value).format("YYYY-MM-DD"));
                     } else if (typeof value === 'string') {
                       field.onChange(value);
                     }

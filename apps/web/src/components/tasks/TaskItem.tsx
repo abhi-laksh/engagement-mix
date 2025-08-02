@@ -1,4 +1,5 @@
 import { useDeleteTask, useToggleTaskComplete } from "@/api-services/tasks";
+import { formatDateForDisplay } from "@/lib/utils";
 import { Task, TaskStatus } from "@/types/task";
 import { ActionIcon, Box, Card, Checkbox, Group, Menu, Text } from "@mantine/core";
 import {
@@ -50,7 +51,7 @@ export default function TaskItem({ task, onEdit, dragHandleProps }: TaskItemProp
   const isCompleted = task.status === TaskStatus.COMPLETED;
 
   const handleToggleComplete = () => {
-    toggleTaskMutation.mutate(task.id);
+    toggleTaskMutation.mutate(task._id);
   };
 
   const handleEdit = () => {
@@ -58,7 +59,7 @@ export default function TaskItem({ task, onEdit, dragHandleProps }: TaskItemProp
   };
 
   const handleDelete = () => {
-    deleteTaskMutation.mutate(task.id);
+    deleteTaskMutation.mutate(task._id);
   };
 
   return (
@@ -115,11 +116,7 @@ export default function TaskItem({ task, onEdit, dragHandleProps }: TaskItemProp
                 </Group>
                 
                 <Text size="xs" c="dimmed">
-                  {task.dueDate.toLocaleDateString('en-US', { 
-                    month: 'short', 
-                    day: '2-digit', 
-                    year: 'numeric' 
-                  })}
+                  {formatDateForDisplay(task.dueDate)}
                 </Text>
               </div>
 

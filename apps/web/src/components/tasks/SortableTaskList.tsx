@@ -1,34 +1,37 @@
 import { useTaskStore } from "@/store/taskStore";
 import { Task } from "@/types/task";
 import {
-    closestCenter,
-    DndContext,
-    DragEndEvent,
-    KeyboardSensor,
-    PointerSensor,
-    useSensor,
-    useSensors,
+  closestCenter,
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
 } from "@dnd-kit/core";
 import {
-    restrictToVerticalAxis,
-    restrictToWindowEdges,
+  restrictToVerticalAxis,
+  restrictToWindowEdges,
 } from "@dnd-kit/modifiers";
 import {
-    SortableContext,
-    sortableKeyboardCoordinates,
-    verticalListSortingStrategy
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { Box, Text } from "@mantine/core";
 import DraggableTaskItem from "./DraggableTaskItem";
 
 interface SortableTaskListProps {
-  tasks: Task[];
   onEditTask?: (task: Task) => void;
 }
 
-export default function SortableTaskList({ tasks, onEditTask }: SortableTaskListProps) {
-  const { reorderTasks } = useTaskStore();
-  
+export default function SortableTaskList({
+  onEditTask,
+}: SortableTaskListProps) {
+  const reorderTasks = useTaskStore((state) => state.reorderTasks);
+  const tasks = useTaskStore((state) => state.allTasks);
+  const tasksById = useTaskStore((state) => state.tasksById);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -44,9 +47,9 @@ export default function SortableTaskList({ tasks, onEditTask }: SortableTaskList
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      const oldIndex = tasks.findIndex((task) => task.id === active.id);
-      const newIndex = tasks.findIndex((task) => task.id === over.id);
-      
+      const oldIndex = tasks.findIndex((id) => id === active.id);
+      const newIndex = tasks.findIndex((id) => id === over.id);
+
       reorderTasks(oldIndex, newIndex);
     }
   };
@@ -68,14 +71,13 @@ export default function SortableTaskList({ tasks, onEditTask }: SortableTaskList
       onDragEnd={handleDragEnd}
       modifiers={[restrictToVerticalAxis, restrictToWindowEdges]}
     >
-      <SortableContext items={tasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
+      <SortableContext
+        items={tasks}
+        strategy={verticalListSortingStrategy}
+      >
         <div className="space-y-4">
-          {tasks.map((task) => (
-            <DraggableTaskItem
-              key={task.id}
-              task={task}
-              onEdit={onEditTask}
-            />
+          {tasks.map((id) => (
+            <DraggableTaskItem key={id} task={tasksById[id]} onEdit={onEditTask} />
           ))}
         </div>
       </SortableContext>
